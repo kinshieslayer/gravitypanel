@@ -18,6 +18,7 @@ const PLATFORMS = ['instagram', 'youtube', 'tiktok'];
 
 export default function Scheduler() {
   const [posts, setPosts] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +28,7 @@ export default function Scheduler() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hashtags, setHashtags] = useState('');
-  const [platforms, setPlatforms] = useState([]);
+  const [selectedAccountIds, setSelectedAccountIds] = useState([]);
   const [scheduledTime, setScheduledTime] = useState('');
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
@@ -46,33 +47,38 @@ export default function Scheduler() {
     }
   };
 
-  const fetchPosts = useCallback(async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/api/posts');
-      setPosts(Array.isArray(res.data) ? res.data : []);
+      const [postsRes, accountsRes] = await Promise.all([
+        api.get('/api/posts'),
+        api.get('/api/accounts')
+      ]);
+      setPosts(Array.isArray(postsRes.data) ? postsRes.data : []);
+      setAccounts(Array.isArray(accountsRes.data) ? accountsRes.data : []);
     } catch {
-      toast.error('Failed to load posts');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const togglePlatform = (p) =>
-    setPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  const toggleAccount = (id) =>
+    setSelectedAccountIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   const resetForm = () => {
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setTitle(''); setDescription(''); setHashtags('');
-    setPlatforms([]); setScheduledTime(''); setVideoFile(null);
+    setSelectedAccountIds([]); setScheduledTime(''); setVideoFile(null);
     setVideoPreview(null);
     setShowForm(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !platforms.length || !scheduledTime || !videoFile) {
+    if (!title || !selectedAccountIds.length || !scheduledTime || !videoFile) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -83,14 +89,14 @@ export default function Scheduler() {
       form.append('title', title);
       form.append('description', description);
       form.append('hashtags', hashtags);
-      form.append('platforms', platforms.join(','));
+      form.append('selected_account_ids', selectedAccountIds.join(','));
       form.append('scheduled_time', scheduledTime);
       form.append('video', videoFile);
 
       await api.post('/api/posts', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Post scheduled!');
       resetForm();
-      fetchPosts();
+      fetchData();
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Failed to schedule post');
     } finally {
@@ -149,25 +155,39 @@ export default function Scheduler() {
             <textarea className="input min-h-[80px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Post description..." />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* Platforms */}
-            <div>
-              <label className="block text-xs font-medium text-dark-200 mb-1.5">Platforms *</label>
-              <div className="flex gap-2">
-                {PLATFORMS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => togglePlatform(p)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-all ${
-                      platforms.includes(p)
-                        ? 'bg-accent-600/20 text-accent-300 ring-1 ring-accent-500/40'
-                        : 'bg-dark-600/40 text-dark-200 hover:bg-dark-500/50'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                ))}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            {/* Accounts Selection */}
+            <div className="lg:col-span-2">
+              <label className="block text-xs font-medium text-dark-200 mb-2">Select Accounts *</label>
+              <div className="flex flex-wrap gap-2">
+                {accounts.length === 0 ? (
+                  <p className="text-xs text-dark-400 italic">No accounts connected. Go to the Accounts tab first.</p>
+                ) : (
+                  accounts.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => toggleAccount(acc.id)}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border transition-all ${
+                        selectedAccountIds.includes(acc.id)
+                          ? 'bg-accent-600/20 border-accent-500/50 text-white shadow-glow'
+                          : 'bg-dark-700/40 border-dark-600/40 text-dark-300 hover:bg-dark-600/60'
+                      }`}
+                    >
+                      {acc.avatar_url ? (
+                        <img src={acc.avatar_url} className="w-6 h-6 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-lg bg-dark-600 flex items-center justify-center text-[10px] font-bold">
+                          {acc.username.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="text-left">
+                        <p className="text-[10px] font-bold leading-none">{acc.username}</p>
+                        <p className="text-[9px] opacity-60 capitalize">{acc.platform}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -256,14 +276,28 @@ export default function Scheduler() {
                     <div className="pt-0.5">{statusIcon[post.status]}</div>
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{post.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {post.platforms.split(',').map((p) => (
-                          <span key={p} className="text-[10px] uppercase tracking-wider text-dark-300 bg-dark-600/40 px-1.5 py-0.5 rounded">
-                            {p.trim()}
-                          </span>
-                        ))}
-                        <span className="text-[11px] text-dark-400">
-                          {new Date(post.scheduled_time).toLocaleString()}
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                        {/* Display specific accounts if they exist, otherwise fallback to platforms */}
+                        {post.selected_account_ids ? (
+                          post.selected_account_ids.split(',').map(id => {
+                            const acc = accounts.find(a => a.id === parseInt(id));
+                            if (!acc) return null;
+                            return (
+                              <div key={id} className="flex items-center gap-1 bg-dark-600/30 border border-dark-500/20 px-1.5 py-0.5 rounded text-[9px] text-white">
+                                <span className={`w-1 h-1 rounded-full ${acc.platform === 'instagram' ? 'bg-pink-400' : acc.platform === 'youtube' ? 'bg-red-400' : 'bg-cyan-400'}`} />
+                                {acc.username}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          post.platforms?.split(',').map((p) => (
+                            <span key={p} className="text-[10px] uppercase tracking-wider text-dark-300 bg-dark-600/40 px-1.5 py-0.5 rounded border border-dark-500/20">
+                              {p.trim()}
+                            </span>
+                          ))
+                        )}
+                        <span className="text-[10px] text-dark-400 font-medium flex items-center gap-1 ml-1">
+                          <Clock size={10} /> {new Date(post.scheduled_time).toLocaleString()}
                         </span>
                       </div>
                       {post.error_message && (

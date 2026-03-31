@@ -25,7 +25,8 @@ async def create_post(
     title: str = Form(...),
     description: str = Form(""),
     hashtags: str = Form(""),
-    platforms: str = Form(...),
+    platforms: Optional[str] = Form(None),
+    selected_account_ids: Optional[str] = Form(None),
     scheduled_time: str = Form(...),
     video: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -49,6 +50,7 @@ async def create_post(
         hashtags=hashtags,
         video_path=file_path,
         platforms=platforms,
+        selected_account_ids=selected_account_ids,
         scheduled_time=sched_dt,
         status="pending",
     )
@@ -62,6 +64,7 @@ async def create_post(
         "description": post.description,
         "hashtags": post.hashtags,
         "platforms": post.platforms,
+        "selected_account_ids": post.selected_account_ids,
         "video_path": post.video_path,
         "scheduled_time": post.scheduled_time.isoformat(),
         "status": post.status,
@@ -89,6 +92,7 @@ def list_posts(
             "description": p.description,
             "hashtags": p.hashtags,
             "platforms": p.platforms,
+            "selected_account_ids": p.selected_account_ids,
             "video_path": p.video_path,
             "scheduled_time": p.scheduled_time.isoformat(),
             "status": p.status,
@@ -112,6 +116,7 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
         "description": post.description,
         "hashtags": post.hashtags,
         "platforms": post.platforms,
+        "selected_account_ids": post.selected_account_ids,
         "video_path": post.video_path,
         "scheduled_time": post.scheduled_time.isoformat(),
         "status": post.status,
@@ -128,6 +133,7 @@ def update_post(
     description: Optional[str] = None,
     hashtags: Optional[str] = None,
     platforms: Optional[str] = None,
+    selected_account_ids: Optional[str] = None,
     scheduled_time: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
@@ -146,6 +152,8 @@ def update_post(
         post.hashtags = hashtags
     if platforms is not None:
         post.platforms = platforms
+    if selected_account_ids is not None:
+        post.selected_account_ids = selected_account_ids
     if scheduled_time is not None:
         try:
             post.scheduled_time = datetime.fromisoformat(scheduled_time)

@@ -19,6 +19,9 @@ router = APIRouter(prefix="/api/accounts", tags=["Accounts"])
 class AccountCreate(BaseModel):
     platform: str
     username: str
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    follower_count: Optional[int] = 0
     credentials: dict  # Will be encrypted before storage
 
 
@@ -36,6 +39,9 @@ def create_account(payload: AccountCreate, db: Session = Depends(get_db)):
     account = Account(
         platform=payload.platform.lower(),
         username=payload.username,
+        display_name=payload.display_name or payload.username,
+        avatar_url=payload.avatar_url,
+        follower_count=payload.follower_count or 0,
         encrypted_credentials=encrypted,
         token_status="connected",
     )
@@ -47,6 +53,9 @@ def create_account(payload: AccountCreate, db: Session = Depends(get_db)):
         "id": account.id,
         "platform": account.platform,
         "username": account.username,
+        "display_name": account.display_name,
+        "avatar_url": account.avatar_url,
+        "follower_count": account.follower_count,
         "token_status": account.token_status,
         "created_at": account.created_at.isoformat(),
     }
@@ -64,6 +73,9 @@ def list_accounts(platform: Optional[str] = None, db: Session = Depends(get_db))
             "id": a.id,
             "platform": a.platform,
             "username": a.username,
+            "display_name": a.display_name,
+            "avatar_url": a.avatar_url,
+            "follower_count": a.follower_count,
             "token_status": a.token_status,
             "created_at": a.created_at.isoformat(),
             "updated_at": a.updated_at.isoformat(),

@@ -25,12 +25,13 @@ scheduler = BackgroundScheduler(timezone="UTC")
 # -----------------------------------------------------------------------
 
 def _publish_post(post_id: int):
-    """Attempt to publish a single scheduled post to all selected platforms."""
+    """Attempt to publish a single scheduled post to all selected accounts/platforms."""
     from instagram_api import InstagramAPI
     from youtube_api import YouTubeAPI
     from tiktok_api import TikTokAPI
-    from models import Setting
+    from models import Account, Setting
     from database import decrypt_value
+    import json
 
     db: Session = SessionLocal()
     try:
@@ -38,78 +39,91 @@ def _publish_post(post_id: int):
         if not post or post.status != "pending":
             return
 
-        platforms = [p.strip().lower() for p in post.platforms.split(",")]
         errors: list[str] = []
         caption = f"{post.title}\n\n{post.description}"
         if post.hashtags:
             caption += f"\n\n{post.hashtags}"
 
-        # --- Instagram ---
-        if "instagram" in platforms:
+        # 1. Identify which accounts to post to
+        accounts_to_post = []
+        
+        if post.selected_account_ids:
+            # New Multi-Account logic: use specific account IDs
+            ids = [int(i.strip()) for i in post.selected_account_ids.split(",") if i.strip()]
+            accounts_to_post = db.query(Account).filter(Account.id.in_(ids)).all()
+        
+        # 2. Loop through selected accounts and publish
+        for acc in accounts_to_post:
             try:
-                token_row = db.query(Setting).filter_by(key="meta_access_token").first()
-                ig_user_row = db.query(Setting).filter_by(key="instagram_user_id").first()
-                if token_row and ig_user_row:
-                    token = decrypt_value(token_row.value) if token_row else ""
-                    ig_user = ig_user_row.value if ig_user_row else ""
-                    api = InstagramAPI(token, ig_user)
-                    # Note: Meta Graph API requires a public URL; for local files
-                    # a pre-signed upload URL workflow would be needed.
+                creds = json.loads(decrypt_value(acc.encrypted_credentials))
+                
+                if acc.platform == "instagram":
+                    # Use account-specific credentials
+                    api = InstagramAPI(creds.get("access_token"), creds.get("instagram_user_id") or acc.username)
                     result = api.publish_reel(post.video_path, caption)
                     if not result["success"]:
-                        errors.append(f"Instagram: {result['error']}")
-                else:
-                    errors.append("Instagram: API credentials not configured")
-            except Exception as exc:
-                errors.append(f"Instagram: {exc}")
-
-        # --- YouTube ---
-        if "youtube" in platforms:
-            try:
-                yt_key_row = db.query(Setting).filter_by(key="youtube_api_key").first()
-                if yt_key_row:
-                    api = YouTubeAPI(api_key=yt_key_row.value)
+                        errors.append(f"Instagram ({acc.username}): {result['error']}")
+                
+                elif acc.platform == "youtube":
+                    api = YouTubeAPI(api_key=creds.get("access_token") or creds.get("api_key"))
                     tags = [t.strip() for t in post.hashtags.split(",") if t.strip()] if post.hashtags else []
-                    result = api.upload_video(
-                        file_path=post.video_path,
-                        title=post.title,
-                        description=post.description,
-                        tags=tags,
-                    )
+                    result = api.upload_video(post.video_path, post.title, post.description, tags)
                     if not result["success"]:
-                        errors.append(f"YouTube: {result['error']}")
-                else:
-                    errors.append("YouTube: API key not configured")
-            except Exception as exc:
-                errors.append(f"YouTube: {exc}")
-
-        # --- TikTok ---
-        if "tiktok" in platforms:
-            try:
-                tt_token_row = db.query(Setting).filter_by(key="tiktok_access_token").first()
-                if tt_token_row:
-                    token = decrypt_value(tt_token_row.value) if tt_token_row else ""
-                    api = TikTokAPI(token)
-                    result = api.publish_video(
-                        file_path=post.video_path,
-                        title=post.title,
-                        description=post.description,
-                    )
+                        errors.append(f"YouTube ({acc.username}): {result['error']}")
+                
+                elif acc.platform == "tiktok":
+                    api = TikTokAPI(creds.get("access_token"))
+                    result = api.publish_video(post.video_path, post.title, post.description)
                     if not result["success"]:
-                        errors.append(f"TikTok: {result['error']}")
-                else:
-                    errors.append("TikTok: API credentials not configured")
-            except Exception as exc:
-                errors.append(f"TikTok: {exc}")
+                        errors.append(f"TikTok ({acc.username}): {result['error']}")
+                        
+            except Exception as e:
+                errors.append(f"{acc.platform} ({acc.username}) critical error: {str(e)}")
 
-        # Update post status
+        # 3. Fallback to Legacy Global Settings (only if no specific accounts are selected)
+        if not accounts_to_post and post.platforms:
+            legacy_platforms = [p.strip().lower() for p in post.platforms.split(",")]
+            
+            if "instagram" in legacy_platforms:
+                try:
+                    token_row = db.query(Setting).filter_by(key="meta_access_token").first()
+                    ig_user_row = db.query(Setting).filter_by(key="instagram_user_id").first()
+                    if token_row and ig_user_row:
+                        api = InstagramAPI(decrypt_value(token_row.value), ig_user_row.value)
+                        result = api.publish_reel(post.video_path, caption)
+                        if not result["success"]: errors.append(f"Legacy Instagram: {result['error']}")
+                except Exception as e: errors.append(f"Legacy Instagram Error: {e}")
+
+            if "youtube" in legacy_platforms:
+                try:
+                    yt_key_row = db.query(Setting).filter_by(key="youtube_api_key").first()
+                    if yt_key_row:
+                        api = YouTubeAPI(yt_key_row.value)
+                        tags = [t.strip() for t in post.hashtags.split(",") if t.strip()] if post.hashtags else []
+                        result = api.upload_video(post.video_path, post.title, post.description, tags)
+                        if not result["success"]: errors.append(f"Legacy YouTube: {result['error']}")
+                except Exception as e: errors.append(f"Legacy YouTube Error: {e}")
+
+            if "tiktok" in legacy_platforms:
+                try:
+                    tt_token_row = db.query(Setting).filter_by(key="tiktok_access_token").first()
+                    if tt_token_row:
+                        api = TikTokAPI(decrypt_value(tt_token_row.value))
+                        result = api.publish_video(post.video_path, post.title, post.description)
+                        if not result["success"]: errors.append(f"Legacy TikTok: {result['error']}")
+                except Exception as e: errors.append(f"Legacy TikTok Error: {e}")
+
+        # Finalize post status
         if errors:
             post.status = "failed"
             post.error_message = "; ".join(errors)
-            logger.error(f"Post {post_id} failed: {post.error_message}")
         else:
-            post.status = "posted"
-            logger.info(f"Post {post_id} published successfully")
+            # If no accounts were even picked, it shouldn't be "posted"
+            if not accounts_to_post and not post.platforms:
+                post.status = "failed"
+                post.error_message = "No accounts or platforms selected for this post."
+            else:
+                post.status = "posted"
 
         post.updated_at = datetime.utcnow()
         db.commit()

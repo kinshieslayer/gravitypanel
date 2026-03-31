@@ -27,6 +27,9 @@ class Account(Base):
     id = Column(Integer, primary_key=True, index=True)
     platform = Column(String(32), nullable=False)          # instagram | youtube | tiktok
     username = Column(String(255), nullable=False)
+    display_name = Column(String(255), nullable=True)
+    avatar_url = Column(Text, nullable=True)
+    follower_count = Column(Integer, default=0)
     encrypted_credentials = Column(Text, nullable=False)    # Fernet-encrypted JSON blob
     token_status = Column(String(32), default="connected")  # connected | expired
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -45,7 +48,8 @@ class ScheduledPost(Base):
     description = Column(Text, default="")
     hashtags = Column(Text, default="")                     # comma-separated
     video_path = Column(Text, nullable=False)               # absolute local path
-    platforms = Column(String(255), nullable=False)         # comma-separated: instagram,youtube,tiktok
+    platforms = Column(String(255), nullable=True)          # legacy comma-separated list
+    selected_account_ids = Column(Text, nullable=True)      # comma-separated: 1,4,5
     scheduled_time = Column(DateTime, nullable=False)
     status = Column(String(32), default="pending")          # pending | posted | failed
     error_message = Column(Text, default="")
