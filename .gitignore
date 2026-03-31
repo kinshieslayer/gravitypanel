@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+backend/env/
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# Builds & Outputs
+dist/
+release/
+backend/build/
+backend/dist/
+backend/*.spec
+*.zip
+*.exe
+
+# Database & Data 
+backend/data/
+
+# Environment
+.env
+.env.local
+.DS_Store

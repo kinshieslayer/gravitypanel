@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Custom base styles                                                  */
+/* ------------------------------------------------------------------ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #374151 #0d1117;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+*::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 3px;
+}
+
+body {
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ */
+/* Animations                                                          */
+/* ------------------------------------------------------------------ */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(99, 102, 241, 0.2); }
+  50%      { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in    { animation: fadeIn 0.4s ease-out both; }
+.animate-slide-left { animation: slideInLeft 0.35s ease-out both; }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.04) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Glass card                                                          */
+/* ------------------------------------------------------------------ */
+
+.glass-card {
+  @apply bg-dark-800/60 backdrop-blur-sm border border-dark-600/40 rounded-xl;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.glass-card:hover {
+  @apply border-accent-500/30 shadow-glow;
+}
+
+/* ------------------------------------------------------------------ */
+/* Status badges                                                       */
+/* ------------------------------------------------------------------ */
+
+.badge {
+  @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.badge-pending  { @apply bg-warning-500/15 text-warning-400; }
+.badge-posted   { @apply bg-success-500/15 text-success-400; }
+.badge-failed   { @apply bg-danger-500/15 text-danger-400; }
+.badge-active   { @apply bg-success-500/15 text-success-400; }
+.badge-inactive { @apply bg-dark-500/40 text-dark-200; }
+
+/* ------------------------------------------------------------------ */
+/* Form controls                                                       */
+/* ------------------------------------------------------------------ */
+
+.input {
+  @apply w-full bg-dark-700/60 border border-dark-500/50 rounded-lg px-4 py-2.5
+         text-sm text-white placeholder-dark-300
+         focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30
+         transition-all duration-200;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium
+         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.btn-primary {
+  @apply bg-accent-600 hover:bg-accent-500 text-white shadow-lg shadow-accent-600/20 hover:shadow-accent-500/30;
+}
+.btn-danger {
+  @apply bg-danger-600/80 hover:bg-danger-500 text-white;
+}
+.btn-ghost {
+  @apply bg-dark-600/40 hover:bg-dark-500/60 text-dark-100;
+}
+
+/* ------------------------------------------------------------------ */
+/* Toggle switch                                                       */
+/* ------------------------------------------------------------------ */
+
+.toggle-track {
+  @apply relative w-11 h-6 rounded-full cursor-pointer transition-colors duration-200;
+}
+.toggle-track.on  { @apply bg-accent-600; }
+.toggle-track.off { @apply bg-dark-500; }
+.toggle-thumb {
+  @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200;
+}
+.toggle-track.on .toggle-thumb { transform: translateX(20px); }

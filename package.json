@@ -1,0 +1,56 @@
+{
+  "name": "gravity-panel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GravityPanel — Social Media Management Desktop App",
+  "main": "frontend/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron": "electron frontend/main.js",
+    "start": "concurrently \"npm run dev\" \"electron frontend/main.js\"",
+    "pack:win": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.gravitypanel.app",
+    "productName": "GravityPanel",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "frontend/**/*",
+      "dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/dist/gravitypanel-backend.exe",
+        "to": "gravitypanel-backend.exe"
+      }
+    ],
+    "win": {
+      "target": "dir"
+    }
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "lucide-react": "^0.378.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.23.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^30.0.8",
+    "electron-builder": "^26.8.1",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.2.12",
+    "wait-on": "^9.0.4"
+  }
+}
