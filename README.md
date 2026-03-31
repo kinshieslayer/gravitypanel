@@ -1,156 +1,48 @@
-# GravityPanel
+# GravityPanel 🚀
+A powerful Desktop Application to automatically schedule, plan, and execute social media posts across TikTok, YouTube, and Instagram. 
 
-A full-stack social media management desktop app built with **FastAPI**, **Electron**, **React**, and **TailwindCSS**.
+Built using a **FastAPI (Python)** backend and an **Electron/React** frontend.
 
-## Features
+## 🛠️ Prerequisites
+Before you begin, ensure you have installed:
+- [Node.js](https://nodejs.org/) (v18+)
+- [Python](https://www.python.org/downloads/) (3.10+)
 
-- **Post Scheduler** — Schedule posts to Instagram, YouTube, and TikTok with video upload, calendar view, and auto-posting via APScheduler.
-- **DM Bot** — Instagram comment-trigger DM automation via instagrapi with anti-duplicate protection and rate limiting.
-- **Analytics** — Multi-platform analytics with charts (Recharts), date range picker, and top content tracking.
-- **Account Manager** — Add/remove social media accounts with encrypted credential storage (Fernet).
-- **Settings** — Configure API keys, DM bot rate limits, and notification preferences.
+---
 
-## Tech Stack
+## 🚀 How to Run Locally for Development
 
-| Layer     | Technology                                   |
-| --------- | -------------------------------------------- |
-| Backend   | Python 3.11+, FastAPI, SQLAlchemy, APScheduler |
-| Frontend  | Electron, React 18, TailwindCSS v3, Recharts |
-| Database  | SQLite                                       |
-| APIs      | Meta Graph API, YouTube Data API v3, TikTok Content Posting API |
-| DM Bot    | instagrapi                                   |
-| Security  | cryptography (Fernet encryption)             |
+To test the application locally, you must run both the backend server and the frontend interface side-by-side.
 
-## Prerequisites
-
-- **Python 3.11+** — [python.org](https://www.python.org/downloads/)
-- **Node.js 18+** — [nodejs.org](https://nodejs.org/)
-- **npm** (comes with Node.js)
-
-## Setup Instructions
-
-### 1. Clone / Navigate to the Project
-
-```bash
-cd gravity-panel
-```
-
-### 2. Install Backend Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Install Frontend Dependencies
-
-```bash
-npm install
-```
-
-### 4. Start the Backend
-
+### 1. Start the Python Backend
+Open a terminal in the project directory, navigate to the `backend` folder, install the dependencies, and start the local API:
 ```bash
 cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+pip install -r requirements.txt
+python main.py
+```
+*(The backend will start running on port 8000).*
+
+### 2. Start the React/Electron Frontend
+Open a **new** terminal window in the main project folder. Install the Node modules and launch the Electron application:
+```bash
+npm install
+npm run start
 ```
 
-The API will be live at `http://localhost:8000`. Swagger docs at `http://localhost:8000/docs`.
+---
 
-### 5. Start the Frontend (Dev Mode)
-
-In a new terminal:
+## 📦 How to Compile/Package the App (Windows)
+If you want to convert the codebase into a portable Windows executable that you can share with people who don't have Python or Node.js installed:
 
 ```bash
-npm run dev
+# 1. Compile the backend to a hidden executable
+cd backend
+pip install pyinstaller
+pyinstaller --name gravitypanel-backend --onefile --noconsole --collect-all fastapi --collect-all uvicorn --collect-all sqlalchemy --collect-all apscheduler --collect-all instagrapi --collect-all pydantic main.py
+
+# 2. Package the application
+cd ..
+npm run pack:win
 ```
-
-Open `http://localhost:5173` in your browser.
-
-### 6. Start as Electron Desktop App (Optional)
-
-```bash
-npm run electron
-```
-
-Or run both Vite + Electron together:
-
-```bash
-npm start
-```
-
-## Project Structure
-
-```
-gravity-panel/
-├── backend/
-│   ├── main.py              # FastAPI entry point
-│   ├── database.py           # DB connection + encryption
-│   ├── models.py             # SQLAlchemy models
-│   ├── scheduler.py          # APScheduler jobs
-│   ├── dm_bot.py             # Instagram DM automation
-│   ├── instagram_api.py      # Meta Graph API
-│   ├── youtube_api.py        # YouTube Data API
-│   ├── tiktok_api.py         # TikTok API
-│   └── routes/
-│       ├── posts.py          # Post CRUD
-│       ├── accounts.py       # Account management
-│       ├── analytics.py      # Analytics endpoints
-│       ├── dm.py             # DM bot endpoints
-│       └── settings.py       # Settings endpoints
-├── frontend/
-│   ├── main.js               # Electron main process
-│   ├── index.html            # HTML entry
-│   └── src/
-│       ├── main.jsx          # React entry
-│       ├── App.jsx           # Router + layout
-│       ├── api.js            # Axios instance
-│       ├── index.css         # TailwindCSS + custom styles
-│       ├── components/
-│       │   ├── Sidebar.jsx
-│       │   ├── Spinner.jsx
-│       │   └── Calendar.jsx
-│       └── pages/
-│           ├── Dashboard.jsx
-│           ├── Scheduler.jsx
-│           ├── DMBot.jsx
-│           ├── Analytics.jsx
-│           ├── Accounts.jsx
-│           └── Settings.jsx
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-├── postcss.config.js
-├── requirements.txt
-└── README.md
-```
-
-## Configuration
-
-After launching, go to the **Settings** page to enter:
-
-1. **Meta App ID & Secret** + access token for Instagram
-2. **YouTube API Key** + channel ID
-3. **TikTok Client Key/Secret** + access token
-4. **Instagram credentials** for the DM bot (instagrapi)
-
-All secrets are encrypted at rest using Fernet (AES-128-CBC).
-
-## API Endpoints
-
-| Method   | Endpoint                         | Description              |
-| -------- | -------------------------------- | ------------------------ |
-| `GET`    | `/api/posts`                     | List scheduled posts     |
-| `POST`   | `/api/posts`                     | Create scheduled post    |
-| `DELETE`  | `/api/posts/{id}`               | Delete a post            |
-| `GET`    | `/api/accounts`                  | List accounts            |
-| `POST`   | `/api/accounts`                  | Add account              |
-| `GET`    | `/api/analytics/{platform}`      | Fetch platform analytics |
-| `GET`    | `/api/analytics/summary`         | Dashboard summary        |
-| `POST`   | `/api/dm/watchers`               | Create DM watcher        |
-| `GET`    | `/api/dm/logs`                   | DM activity log          |
-| `GET`    | `/api/settings`                  | Get settings             |
-| `PUT`    | `/api/settings`                  | Update settings          |
-
-## License
-
-Private — All rights reserved.
+The compiled, ready-to-share application will be located in the `release/win-unpacked` folder!
