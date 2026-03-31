@@ -1,7 +1,10 @@
 # GravityPanel 🚀
-A powerful Desktop Application to automatically schedule, plan, and execute social media posts across TikTok, YouTube, and Instagram. 
+A powerful Desktop Application to automatically schedule, plan, and execute social media posts across TikTok, YouTube, and Instagram.
 
-Built using a **FastAPI (Python)** backend and an **Electron/React** frontend.
+## ✨ Key Features (Multi-Account Edition)
+- **Multi-Account Profile Management**: Connect multiple accounts per platform with custom avatars and display names.
+- **Visual Account Picker**: Select specific brands/profiles for each scheduled post.
+- **FastAPI / Electron Stack**: Robust background task handling for persistent scheduling.
 
 ## 🛠️ Prerequisites
 Before you begin, ensure you have installed:

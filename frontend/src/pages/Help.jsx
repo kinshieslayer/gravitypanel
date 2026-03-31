@@ -43,12 +43,12 @@ export default function Help() {
     {
       title: 'Connecting Accounts',
       icon: Users,
-      desc: 'Before scheduling posts, go to the Accounts tab and add your profile handles. This tells the scheduler which connected API to route the post through.',
+      desc: 'Go to the Accounts tab to connect multiple professional profiles. You can add unique profile pictures and display names for each brand you manage.',
     },
     {
       title: 'Scheduling Posts',
       icon: CalendarClock,
-      desc: 'Use the Scheduler tab to upload video files, write captions, and choose a time. The app runs a background process that checks every minute. Keep the app open (or running in the background) for posts to publish.',
+      desc: 'Upload videos and write captions, then use the Visual Account Picker to choose which specific profiles should receive the post. You can select multiple accounts at once!',
     },
     {
       title: 'DM Bot Automation',
